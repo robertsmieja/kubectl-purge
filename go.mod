@@ -1,4 +1,4 @@
-module github.com/replicatedhq/krew-plugin-template
+module github.com/robertsmieja/kubectl-purge
 
 go 1.12
 
