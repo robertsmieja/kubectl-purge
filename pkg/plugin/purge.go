@@ -37,7 +37,7 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 	waitGroup := sync.WaitGroup{}
 	for _, namespace := range namespaces.Items {
 		namespaceName := namespace.Name
-		log.Info("Deleting namespace: ", namespaceName)
+		log.Info("Deleting namespace: %s", namespaceName)
 
 		waitGroup.Add(1)
 		go func() {
