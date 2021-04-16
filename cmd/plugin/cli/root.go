@@ -2,17 +2,14 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"strings"
-	"time"
-
+	"github.com/pkg/errors"
 	"github.com/robertsmieja/kubectl-purge/pkg/logger"
 	"github.com/robertsmieja/kubectl-purge/pkg/plugin"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tj/go-spin"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"os"
+	"strings"
 )
 
 var (
@@ -26,43 +23,26 @@ func RootCmd() *cobra.Command {
 		Long:          `.`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
-		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			err := viper.BindPFlags(cmd.Flags())
+			if err != nil {
+				return errors.Wrap(err, "failed to bind flags")
+			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger()
-			log.Info("")
 
-			s := spin.New()
-			finishedCh := make(chan bool, 1)
-			namespaceName := make(chan string, 1)
-			go func() {
-				lastNamespaceName := ""
-				for {
-					select {
-					case <-finishedCh:
-						fmt.Printf("\r")
-						return
-					case n := <-namespaceName:
-						lastNamespaceName = n
-					case <-time.After(time.Millisecond * 100):
-						if lastNamespaceName == "" {
-							fmt.Printf("\r  \033[36mSearching for namespaces\033[m %s", s.Next())
-						} else {
-							fmt.Printf("\r  \033[36mSearching for namespaces\033[m %s (%s)", s.Next(), lastNamespaceName)
-						}
-					}
-				}
-			}()
-			defer func() {
-				finishedCh <- true
-			}()
+			errorCh := make(chan<- error, 1)
 
-			if err := plugin.RunPlugin(KubernetesConfigFlags, namespaceName); err != nil {
+			if err := plugin.RunPlugin(KubernetesConfigFlags, log, errorCh); err != nil {
 				return errors.Cause(err)
 			}
 
-			log.Info("")
+			// TODO handle errors from errorCh
+
+			log.Info("Finished")
 
 			return nil
 		},
