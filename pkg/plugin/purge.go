@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/robertsmieja/kubectl-purge/pkg/logger"
 	"github.com/robertsmieja/kubectl-purge/pkg/util"
@@ -50,13 +49,41 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 		return errors.Wrap(err, "failed to list namespaces")
 	}
 
-	waitGroup := sync.WaitGroup{}
+	// wait for all the goroutines per cluster
+	clusterWaitGroup := sync.WaitGroup{}
+
+	// wait for all the goroutines per namespace
+	namespaceWaitGroup := sync.WaitGroup{}
 
 	log.Info("Deleting cluster CRDs")
-	waitGroup.Add(1)
+	clusterWaitGroup.Add(1)
 	go func() {
 		deleteClusterCrds(apixClient, errorCh)
-		waitGroup.Done()
+		clusterWaitGroup.Done()
+	}()
+
+	clusterWaitGroup.Add(1)
+	go func() {
+		deleteClusterRoleBindings(clientset, errorCh)
+		clusterWaitGroup.Done()
+	}()
+
+	clusterWaitGroup.Add(1)
+	go func() {
+		deleteClusterRoles(clientset, errorCh)
+		clusterWaitGroup.Done()
+	}()
+
+	clusterWaitGroup.Add(1)
+	go func() {
+		deletePodSecurityPolicies(clientset, errorCh)
+		clusterWaitGroup.Done()
+	}()
+
+	clusterWaitGroup.Add(1)
+	go func() {
+		deleteIngressClasses(clientset, errorCh)
+		clusterWaitGroup.Done()
 	}()
 
 	for _, namespace := range namespaces.Items {
@@ -69,123 +96,119 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 
 		log.Info("Deleting namespace: %s", namespaceName)
 
-		waitGroup.Add(1)
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteNamespaceCrds(apixClient, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deletePersistentVolumeClaims(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteConfigMaps(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteEndpoints(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			// RoleBindings should be deleted BEFORE Roles
+			deleteRoleBindings(clientset, namespaceName, errorCh)
+			deleteRoles(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteIngresses(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteNetworkPolicies(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			// CronJobs may kick off Jobs, they should go 1st
+			deleteCronJobs(clientset, namespaceName, errorCh)
+			deleteJobs(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
 		go func() {
 			deleteDeployments(clientset, namespaceName, errorCh)
-			waitGroup.Done()
+			namespaceWaitGroup.Done()
 		}()
 
-		waitGroup.Add(1)
+		namespaceWaitGroup.Add(1)
 		go func() {
 			deleteDaemonSets(clientset, namespaceName, errorCh)
-			waitGroup.Done()
+			namespaceWaitGroup.Done()
 		}()
 
-		waitGroup.Add(1)
+		namespaceWaitGroup.Add(1)
 		go func() {
 			deleteStatefulSets(clientset, namespaceName, errorCh)
-			waitGroup.Done()
+			namespaceWaitGroup.Done()
 		}()
 
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteReplicaSets(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteSecrets(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deletePodDisruptionBudgets(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		namespaceWaitGroup.Add(1)
+		go func() {
+			deleteEvents(clientset, namespaceName, errorCh)
+			namespaceWaitGroup.Done()
+		}()
+
+		// cleanup the namespace after everything is done
+		clusterWaitGroup.Add(1)
+		go func() {
+			namespaceWaitGroup.Wait()
+			if err := clientset.CoreV1().Namespaces().Delete(ctx, namespaceName, deletePolicy); err != nil {
+				errorCh <- err
+			}
+			clusterWaitGroup.Done()
+		}()
 	}
 
+	// delete PersistentVolumes after the namespaced PersistentVolumeClaims are deleted
+	clusterWaitGroup.Add(1)
+	go func() {
+		deletePersistentVolumes(clientset, errorCh)
+		clusterWaitGroup.Done()
+	}()
+
 	defer cancel()
-	waitGroup.Wait()
+	clusterWaitGroup.Wait()
 	return nil
-}
-
-func deleteDeployments(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
-	ctx, cancel := createCtx()
-	waitGroup := sync.WaitGroup{}
-
-	deployments, err := clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		errorCh <- errors.Wrap(err, "failed to list deployments")
-	}
-	for _, deployment := range deployments.Items {
-		waitGroup.Add(1)
-
-		deploymentName := deployment.Name
-		go func() {
-			if err := clientset.AppsV1().Deployments(namespace).Delete(ctx, deploymentName, deletePolicy); err != nil {
-				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete deployment %s", deploymentName))
-			}
-			waitGroup.Done()
-		}()
-	}
-
-	defer cancel()
-	waitGroup.Wait()
-}
-
-func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
-	ctx, cancel := createCtx()
-	waitGroup := sync.WaitGroup{}
-
-	daemonSets, err := clientset.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		errorCh <- errors.Wrap(err, "failed to list daemonSets")
-	}
-	for _, daemonSet := range daemonSets.Items {
-		waitGroup.Add(1)
-
-		daemonSetName := daemonSet.Name
-		go func() {
-			err := clientset.AppsV1().DaemonSets(namespace).Delete(ctx, daemonSetName, deletePolicy)
-			if err != nil {
-				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete daemonSet %s", daemonSetName))
-			}
-			waitGroup.Done()
-		}()
-	}
-	defer cancel()
-	waitGroup.Wait()
-}
-
-func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
-	ctx, cancel := createCtx()
-	waitGroup := sync.WaitGroup{}
-
-	statefulSets, err := clientset.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		errorCh <- errors.Wrap(err, "failed to list statefulSets")
-	}
-	for _, statefulSet := range statefulSets.Items {
-		waitGroup.Add(1)
-
-		name := statefulSet.Name
-		go func() {
-			err := clientset.AppsV1().StatefulSets(namespace).Delete(ctx, name, deletePolicy)
-			if err != nil {
-				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete statefulSet %s", name))
-			}
-			waitGroup.Done()
-		}()
-	}
-	defer cancel()
-	waitGroup.Wait()
-}
-
-func deleteClusterCrds(apixClient *apixv1client.ApiextensionsV1Client, errorCh chan<- error) {
-	ctx, cancel := createCtx()
-	waitGroup := sync.WaitGroup{}
-
-	crds, err := apixClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		errorCh <- errors.Wrap(err, "failed to list crds")
-	}
-	for _, crd := range crds.Items {
-		waitGroup.Add(1)
-
-		name := crd.Name
-		go func() {
-			err := apixClient.CustomResourceDefinitions().Delete(ctx, name, deletePolicy)
-			if err != nil {
-				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete crd %s", name))
-			}
-			waitGroup.Done()
-		}()
-	}
-	defer cancel()
-	waitGroup.Wait()
 }
