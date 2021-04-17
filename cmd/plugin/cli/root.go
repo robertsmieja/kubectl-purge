@@ -34,21 +34,25 @@ func RootCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger()
 
+			logCh := make(chan string, 1)
 			errorCh := make(chan error, 1)
 
-			if err := plugin.RunPlugin(KubernetesConfigFlags, log, errorCh); err != nil {
-				return errors.Cause(err)
-			}
-
-			// TODO handle errors from errorCh
 			// print errors while running
 			go func() {
-				select {
-				case err := <-errorCh:
-					log.Error(err)
+				for {
+					select {
+					case logStr := <-logCh:
+						log.Info(logStr)
+					case err := <-errorCh:
+						log.Error(err)
+					}
 				}
 			}()
 
+			log.Info("Running")
+			if err := plugin.RunPlugin(KubernetesConfigFlags, logCh, errorCh); err != nil {
+				return errors.Cause(err)
+			}
 			log.Info("Finished")
 
 			return nil

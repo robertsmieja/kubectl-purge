@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deleteCronJobs(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteCronJobs(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -34,7 +34,7 @@ func deleteCronJobs(clientset *kubernetes.Clientset, namespace string, errorCh c
 	waitGroup.Wait()
 }
 
-func deleteJobs(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteJobs(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 

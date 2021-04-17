@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deletePodSecurityPolicies(clientset *kubernetes.Clientset, errorCh chan<- error) {
+func deletePodSecurityPolicies(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -35,7 +35,7 @@ func deletePodSecurityPolicies(clientset *kubernetes.Clientset, errorCh chan<- e
 	waitGroup.Wait()
 }
 
-func deletePodDisruptionBudgets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deletePodDisruptionBudgets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 

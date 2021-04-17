@@ -1,8 +1,8 @@
 package plugin
 
 import (
+	"fmt"
 	"github.com/pkg/errors"
-	"github.com/robertsmieja/kubectl-purge/pkg/logger"
 	"github.com/robertsmieja/kubectl-purge/pkg/util"
 	"golang.org/x/net/context"
 	apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
@@ -26,7 +26,7 @@ func createCtx() (context.Context, context.CancelFunc) {
 	//return context.WithTimeout(context.Background(), 5*time.Second)
 }
 
-func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, errorCh chan<- error) error {
+func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, errorCh chan<- error) error {
 	ctx, cancel := createCtx()
 
 	config, err := configFlags.ToRESTConfig()
@@ -55,7 +55,7 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 	// wait for all the goroutines per namespace
 	namespaceWaitGroup := sync.WaitGroup{}
 
-	log.Info("Deleting cluster CRDs")
+	logCh <- "Deleting cluster CRDs"
 	clusterWaitGroup.Add(1)
 	go func() {
 		deleteClusterCrds(apixClient, errorCh)
@@ -64,25 +64,25 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 
 	clusterWaitGroup.Add(1)
 	go func() {
-		deleteClusterRoleBindings(clientset, errorCh)
+		deleteClusterRoleBindings(clientset, logCh, errorCh)
 		clusterWaitGroup.Done()
 	}()
 
 	clusterWaitGroup.Add(1)
 	go func() {
-		deleteClusterRoles(clientset, errorCh)
+		deleteClusterRoles(clientset, logCh, errorCh)
 		clusterWaitGroup.Done()
 	}()
 
 	clusterWaitGroup.Add(1)
 	go func() {
-		deletePodSecurityPolicies(clientset, errorCh)
+		deletePodSecurityPolicies(clientset, logCh, errorCh)
 		clusterWaitGroup.Done()
 	}()
 
 	clusterWaitGroup.Add(1)
 	go func() {
-		deleteIngressClasses(clientset, errorCh)
+		deleteIngressClasses(clientset, logCh, errorCh)
 		clusterWaitGroup.Done()
 	}()
 
@@ -90,11 +90,11 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 		namespaceName := namespace.Name
 
 		if util.Contains(systemNamespaces, namespaceName) {
-			log.Info("Skipping system namespace: %s", namespaceName)
+			logCh <- fmt.Sprintf("Skipping system namespace: %s", namespaceName)
 			continue
 		}
 
-		log.Info("Deleting namespace: %s", namespaceName)
+		logCh <- fmt.Sprintf("Deleting namespace: %s", namespaceName)
 
 		namespaceWaitGroup.Add(1)
 		go func() {
@@ -104,107 +104,109 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, log *logger.Logger, e
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deletePersistentVolumeClaims(clientset, namespaceName, errorCh)
+			deletePersistentVolumeClaims(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteConfigMaps(clientset, namespaceName, errorCh)
+			deleteConfigMaps(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteEndpoints(clientset, namespaceName, errorCh)
+			deleteEndpoints(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
 			// RoleBindings should be deleted BEFORE Roles
-			deleteRoleBindings(clientset, namespaceName, errorCh)
-			deleteRoles(clientset, namespaceName, errorCh)
+			deleteRoleBindings(clientset, namespaceName, logCh, errorCh)
+			deleteRoles(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteIngresses(clientset, namespaceName, errorCh)
+			deleteIngresses(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteNetworkPolicies(clientset, namespaceName, errorCh)
+			deleteNetworkPolicies(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
 			// CronJobs may kick off Jobs, they should go 1st
-			deleteCronJobs(clientset, namespaceName, errorCh)
-			deleteJobs(clientset, namespaceName, errorCh)
+			deleteCronJobs(clientset, namespaceName, logCh, errorCh)
+			deleteJobs(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteDeployments(clientset, namespaceName, errorCh)
+			deleteDeployments(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteDaemonSets(clientset, namespaceName, errorCh)
+			deleteDaemonSets(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteStatefulSets(clientset, namespaceName, errorCh)
+			deleteStatefulSets(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteReplicaSets(clientset, namespaceName, errorCh)
+			deleteReplicaSets(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteSecrets(clientset, namespaceName, errorCh)
+			deleteSecrets(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deletePodDisruptionBudgets(clientset, namespaceName, errorCh)
+			deletePodDisruptionBudgets(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteEvents(clientset, namespaceName, errorCh)
+			deleteEvents(clientset, namespaceName, logCh, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
 		// cleanup the namespace after everything is done
-		clusterWaitGroup.Add(1)
-		go func() {
-			namespaceWaitGroup.Wait()
-			if err := clientset.CoreV1().Namespaces().Delete(ctx, namespaceName, deletePolicy); err != nil {
-				errorCh <- err
-			}
-			clusterWaitGroup.Done()
-		}()
+		if namespaceName != "default" {
+			clusterWaitGroup.Add(1)
+			go func() {
+				namespaceWaitGroup.Wait()
+				if err := clientset.CoreV1().Namespaces().Delete(ctx, namespaceName, deletePolicy); err != nil {
+					errorCh <- err
+				}
+				clusterWaitGroup.Done()
+			}()
+		}
 	}
 
 	// delete PersistentVolumes after the namespaced PersistentVolumeClaims are deleted
 	clusterWaitGroup.Add(1)
 	go func() {
-		deletePersistentVolumes(clientset, errorCh)
+		deletePersistentVolumes(clientset, logCh, errorCh)
 		clusterWaitGroup.Done()
 	}()
 

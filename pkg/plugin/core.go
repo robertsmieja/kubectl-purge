@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -34,7 +34,7 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, errorCh
 	waitGroup.Wait()
 }
 
-func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -60,7 +60,7 @@ func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, errorCh 
 	waitGroup.Wait()
 }
 
-func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -86,7 +86,7 @@ func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace str
 	waitGroup.Wait()
 }
 
-func deletePersistentVolumes(clientset *kubernetes.Clientset, errorCh chan<- error) {
+func deletePersistentVolumes(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -112,7 +112,7 @@ func deletePersistentVolumes(clientset *kubernetes.Clientset, errorCh chan<- err
 	waitGroup.Wait()
 }
 
-func deleteSecrets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteSecrets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 

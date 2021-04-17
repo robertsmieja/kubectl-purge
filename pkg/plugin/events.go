@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deleteEvents(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteEvents(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 

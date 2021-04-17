@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deleteDeployments(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteDeployments(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -33,7 +33,7 @@ func deleteDeployments(clientset *kubernetes.Clientset, namespace string, errorC
 	waitGroup.Wait()
 }
 
-func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -58,7 +58,7 @@ func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, errorCh
 	waitGroup.Wait()
 }
 
-func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -84,7 +84,7 @@ func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, error
 	waitGroup.Wait()
 }
 
-func deleteReplicaSets(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteReplicaSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 

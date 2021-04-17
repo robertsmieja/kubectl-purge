@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-func deleteIngresses(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteIngresses(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -34,7 +34,7 @@ func deleteIngresses(clientset *kubernetes.Clientset, namespace string, errorCh 
 	waitGroup.Wait()
 }
 
-func deleteNetworkPolicies(clientset *kubernetes.Clientset, namespace string, errorCh chan<- error) {
+func deleteNetworkPolicies(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
@@ -61,7 +61,7 @@ func deleteNetworkPolicies(clientset *kubernetes.Clientset, namespace string, er
 }
 
 // this should be fine, as there are no IngressClasses by default
-func deleteIngressClasses(clientset *kubernetes.Clientset, errorCh chan<- error) {
+func deleteIngressClasses(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
 	waitGroup := sync.WaitGroup{}
 
