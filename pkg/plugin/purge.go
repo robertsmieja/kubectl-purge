@@ -8,6 +8,7 @@ import (
 	apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"sync"
 )
@@ -44,6 +45,11 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 		return errors.Wrap(err, "failed to create apiextensions client")
 	}
 
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "failed to create dynamic client")
+	}
+
 	namespaces, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to list namespaces")
@@ -58,7 +64,7 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 	logCh <- "Deleting cluster CRDs"
 	clusterWaitGroup.Add(1)
 	go func() {
-		deleteClusterCrds(apixClient, errorCh)
+		deleteClusterCrds(apixClient, dynamicClient, errorCh)
 		clusterWaitGroup.Done()
 	}()
 
@@ -98,7 +104,7 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 
 		namespaceWaitGroup.Add(1)
 		go func() {
-			deleteNamespaceCrds(apixClient, namespaceName, errorCh)
+			deleteNamespacedCrds(apixClient, dynamicClient, namespaceName, errorCh)
 			namespaceWaitGroup.Done()
 		}()
 
@@ -212,5 +218,7 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 
 	defer cancel()
 	clusterWaitGroup.Wait()
+	close(logCh)
+	close(errorCh)
 	return nil
 }
