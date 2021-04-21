@@ -71,6 +71,7 @@ var defaultClusterRoles = []string{
 
 var defaultClusterRolePrefixes = []string{
 	"kubeadm:",
+	"microk8s", // microk8s
 	"system:",
 }
 
@@ -112,6 +113,7 @@ var defaultClusterRoleBindings = []string{
 
 var defaultClusterRoleBindingPrefixes = []string{
 	"kubeadm:",
+	"microk8s", // microk8s
 	"system:",
 }
 
