@@ -31,22 +31,25 @@ func RootCmd() *cobra.Command {
 				return errors.Wrap(err, "failed to bind flags")
 			}
 
-			prompt := promptui.Prompt{
-				Label:     "This is a destructive operation, are you sure",
-				IsConfirm: true,
-			}
+			yes := viper.GetBool("yes")
 
-			result, err := prompt.Run()
-			if err != nil {
-				return errors.Wrap(err, "Prompt failed")
-			}
+			if !yes {
+				prompt := promptui.Prompt{
+					Label:     "This is a destructive operation, are you sure",
+					IsConfirm: true,
+				}
 
-			confirmation := result == "y" || result == "Y"
-			if confirmation {
-				return nil
-			} else {
-				return errors.New("No confirmation was given!")
+				result, err := prompt.Run()
+				if err != nil {
+					return errors.Wrap(err, "Prompt failed")
+				}
+
+				confirmation := result == "y" || result == "Y"
+				if !confirmation {
+					return errors.New("No confirmation was given!")
+				}
 			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger()
@@ -82,6 +85,8 @@ func RootCmd() *cobra.Command {
 	}
 
 	cobra.OnInitialize(initConfig)
+
+	cmd.Flags().BoolP("yes", "y", false, "Delete without confirming")
 
 	KubernetesConfigFlags = genericclioptions.NewConfigFlags(false)
 	KubernetesConfigFlags.AddFlags(cmd.Flags())
