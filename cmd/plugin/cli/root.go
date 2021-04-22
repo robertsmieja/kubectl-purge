@@ -60,16 +60,21 @@ func RootCmd() *cobra.Command {
 			// print messages and errors while running
 			logWaitGroup := sync.WaitGroup{}
 			logWaitGroup.Add(2)
+			logMutex := &sync.Mutex{}
 			go func() {
 				defer logWaitGroup.Done()
 				for logStr := range logCh {
+					logMutex.Lock()
 					log.Info(logStr)
+					logMutex.Unlock()
 				}
 			}()
 			go func() {
 				defer logWaitGroup.Done()
 				for err := range errorCh {
+					logMutex.Lock()
 					log.Error(err)
+					logMutex.Unlock()
 				}
 			}()
 
