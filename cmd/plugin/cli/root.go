@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/manifoldco/promptui"
 	"github.com/pkg/errors"
 	"github.com/robertsmieja/kubectl-purge/pkg/logger"
 	"github.com/robertsmieja/kubectl-purge/pkg/plugin"
@@ -29,7 +30,22 @@ func RootCmd() *cobra.Command {
 				return errors.Wrap(err, "failed to bind flags")
 			}
 
-			return nil
+			prompt := promptui.Prompt{
+				Label:     "This is a destructive operation, are you sure",
+				IsConfirm: true,
+			}
+
+			result, err := prompt.Run()
+			if err != nil {
+				return errors.Wrap(err, "Prompt failed")
+			}
+
+			confirmation := result == "y" || result == "Y"
+			if confirmation {
+				return nil
+			} else {
+				return errors.New("No confirmation was given!")
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			log := logger.NewLogger()
