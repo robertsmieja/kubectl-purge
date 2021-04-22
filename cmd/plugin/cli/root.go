@@ -11,6 +11,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"os"
 	"strings"
+	"sync"
 )
 
 var (
@@ -53,15 +54,19 @@ func RootCmd() *cobra.Command {
 			logCh := make(chan string, 1)
 			errorCh := make(chan error, 1)
 
-			// print errors while running
+			// print messages and errors while running
+			logWaitGroup := sync.WaitGroup{}
+			logWaitGroup.Add(2)
 			go func() {
-				for {
-					select {
-					case logStr := <-logCh:
-						log.Info(logStr)
-					case err := <-errorCh:
-						log.Error(err)
-					}
+				defer logWaitGroup.Done()
+				for logStr := range logCh {
+					log.Info(logStr)
+				}
+			}()
+			go func() {
+				defer logWaitGroup.Done()
+				for err := range errorCh {
+					log.Error(err)
 				}
 			}()
 
@@ -69,6 +74,7 @@ func RootCmd() *cobra.Command {
 			if err := plugin.RunPlugin(KubernetesConfigFlags, logCh, errorCh); err != nil {
 				return errors.Cause(err)
 			}
+			logWaitGroup.Wait()
 			log.Info("Finished")
 
 			return nil
