@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"sync"
-	"time"
 )
 
 var gracePeriodSeconds = int64(0)
@@ -24,8 +23,7 @@ var deletePolicy = metav1.DeleteOptions{
 var systemNamespaces = []string{"kube-public", "kube-node-lease", "kube-system"}
 
 func createCtx() (context.Context, context.CancelFunc) {
-	//return context.WithCancel(context.Background())
-	return context.WithTimeout(context.Background(), 5*time.Second)
+	return context.WithCancel(context.Background())
 }
 
 func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, errorCh chan<- error) error {
