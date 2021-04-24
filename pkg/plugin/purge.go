@@ -30,6 +30,7 @@ func createCtx() (context.Context, context.CancelFunc) {
 
 func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, errorCh chan<- error) error {
 	ctx, cancel := createCtx()
+	defer cancel()
 
 	config, err := configFlags.ToRESTConfig()
 	if err != nil {
@@ -217,7 +218,6 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 		clusterWaitGroup.Done()
 	}()
 
-	defer cancel()
 	clusterWaitGroup.Wait()
 	close(logCh)
 	close(errorCh)

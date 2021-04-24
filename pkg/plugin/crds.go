@@ -13,6 +13,7 @@ import (
 
 func deleteClusterCrds(apixClient *apixv1client.ApiextensionsV1Client, dynamicClient dynamic.Interface, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	crds, err := apixClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
@@ -33,12 +34,12 @@ func deleteClusterCrds(apixClient *apixv1client.ApiextensionsV1Client, dynamicCl
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteNamespacedCrds(apixClient *apixv1client.ApiextensionsV1Client, dynamicClient dynamic.Interface, namespace string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	crds, err := apixClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{
@@ -62,13 +63,13 @@ func deleteNamespacedCrds(apixClient *apixv1client.ApiextensionsV1Client, dynami
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteCustomResources(dynamicClient *dynamic.Interface, crd apixv1.CustomResourceDefinition, namespace string, errorCh chan<- error) {
 	name := crd.Name
-	ctx, _ := createCtx()
+	ctx, cancel := createCtx()
+	defer cancel()
 
 	crdGvr := crd.GroupVersionKind().GroupVersion().WithResource(name)
 	crApi := (*dynamicClient).Resource(crdGvr)

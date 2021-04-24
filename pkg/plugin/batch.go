@@ -10,6 +10,7 @@ import (
 
 func deleteCronJobs(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.BatchV1().CronJobs(namespace)
@@ -30,12 +31,12 @@ func deleteCronJobs(clientset *kubernetes.Clientset, namespace string, logCh cha
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteJobs(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.BatchV1().Jobs(namespace)

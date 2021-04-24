@@ -10,6 +10,7 @@ import (
 
 func deleteDeployments(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.AppsV1().Deployments(namespace)
@@ -29,12 +30,12 @@ func deleteDeployments(clientset *kubernetes.Clientset, namespace string, logCh 
 		}()
 	}
 
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.AppsV1().DaemonSets(namespace)
@@ -54,12 +55,12 @@ func deleteDaemonSets(clientset *kubernetes.Clientset, namespace string, logCh c
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.AppsV1().StatefulSets(namespace)
@@ -80,12 +81,12 @@ func deleteStatefulSets(clientset *kubernetes.Clientset, namespace string, logCh
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteReplicaSets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.AppsV1().ReplicaSets(namespace)
@@ -106,6 +107,5 @@ func deleteReplicaSets(clientset *kubernetes.Clientset, namespace string, logCh 
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }

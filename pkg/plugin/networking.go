@@ -10,6 +10,7 @@ import (
 
 func deleteIngresses(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.NetworkingV1().Ingresses(namespace)
@@ -30,12 +31,12 @@ func deleteIngresses(clientset *kubernetes.Clientset, namespace string, logCh ch
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteNetworkPolicies(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.NetworkingV1().NetworkPolicies(namespace)
@@ -56,13 +57,13 @@ func deleteNetworkPolicies(clientset *kubernetes.Clientset, namespace string, lo
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 // this should be fine, as there are no IngressClasses by default
 func deleteIngressClasses(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.NetworkingV1().IngressClasses()
@@ -83,6 +84,5 @@ func deleteIngressClasses(clientset *kubernetes.Clientset, logCh chan<- string, 
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }

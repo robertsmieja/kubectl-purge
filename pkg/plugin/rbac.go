@@ -11,6 +11,7 @@ import (
 
 func deleteRoles(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.RbacV1().Roles(namespace)
@@ -31,12 +32,12 @@ func deleteRoles(clientset *kubernetes.Clientset, namespace string, logCh chan<-
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteRoleBindings(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.RbacV1().RoleBindings(namespace)
@@ -57,7 +58,6 @@ func deleteRoleBindings(clientset *kubernetes.Clientset, namespace string, logCh
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
@@ -77,6 +77,7 @@ var defaultClusterRolePrefixes = []string{
 
 func deleteClusterRoles(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.RbacV1().ClusterRoles()
@@ -101,7 +102,6 @@ func deleteClusterRoles(clientset *kubernetes.Clientset, logCh chan<- string, er
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
@@ -119,6 +119,7 @@ var defaultClusterRoleBindingPrefixes = []string{
 
 func deleteClusterRoleBindings(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.RbacV1().ClusterRoleBindings()
@@ -144,6 +145,5 @@ func deleteClusterRoleBindings(clientset *kubernetes.Clientset, logCh chan<- str
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }

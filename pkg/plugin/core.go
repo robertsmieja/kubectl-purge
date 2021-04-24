@@ -10,6 +10,7 @@ import (
 
 func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.CoreV1().ConfigMaps(namespace)
@@ -30,12 +31,12 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, logCh c
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.CoreV1().Endpoints(namespace)
@@ -56,12 +57,12 @@ func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, logCh ch
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.CoreV1().PersistentVolumeClaims(namespace)
@@ -82,12 +83,12 @@ func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace str
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deletePersistentVolumes(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.CoreV1().PersistentVolumes()
@@ -108,12 +109,12 @@ func deletePersistentVolumes(clientset *kubernetes.Clientset, logCh chan<- strin
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deleteSecrets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.CoreV1().Secrets(namespace)
@@ -134,6 +135,5 @@ func deleteSecrets(clientset *kubernetes.Clientset, namespace string, logCh chan
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }

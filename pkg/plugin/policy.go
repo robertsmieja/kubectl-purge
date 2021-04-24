@@ -10,6 +10,7 @@ import (
 
 func deletePodSecurityPolicies(clientset *kubernetes.Clientset, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	// TODO remove after K8s 1.22+, as this is deprecated
@@ -31,12 +32,12 @@ func deletePodSecurityPolicies(clientset *kubernetes.Clientset, logCh chan<- str
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
 
 func deletePodDisruptionBudgets(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.PolicyV1().PodDisruptionBudgets(namespace)
@@ -57,6 +58,5 @@ func deletePodDisruptionBudgets(clientset *kubernetes.Clientset, namespace strin
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }

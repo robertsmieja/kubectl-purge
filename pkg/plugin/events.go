@@ -10,6 +10,7 @@ import (
 
 func deleteEvents(clientset *kubernetes.Clientset, namespace string, logCh chan<- string, errorCh chan<- error) {
 	ctx, cancel := createCtx()
+	defer cancel()
 	waitGroup := sync.WaitGroup{}
 
 	api := clientset.EventsV1().Events(namespace)
@@ -30,6 +31,5 @@ func deleteEvents(clientset *kubernetes.Clientset, namespace string, logCh chan<
 			waitGroup.Done()
 		}()
 	}
-	defer cancel()
 	waitGroup.Wait()
 }
