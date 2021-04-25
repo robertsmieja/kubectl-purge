@@ -18,17 +18,18 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, namespace string, logCh c
 	configMaps, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list configMaps")
+		return
 	}
 	for _, configMap := range configMaps.Items {
 		waitGroup.Add(1)
 
 		name := configMap.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete configMap %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -44,17 +45,18 @@ func deleteEndpoints(clientset *kubernetes.Clientset, namespace string, logCh ch
 	endpoints, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list endpoints")
+		return
 	}
 	for _, endpoint := range endpoints.Items {
 		waitGroup.Add(1)
 
 		name := endpoint.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete endpoint %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -70,17 +72,18 @@ func deletePersistentVolumeClaims(clientset *kubernetes.Clientset, namespace str
 	persistentVolumeClaims, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list persistentVolumeClaims")
+		return
 	}
 	for _, persistentVolumeClaim := range persistentVolumeClaims.Items {
 		waitGroup.Add(1)
 
 		name := persistentVolumeClaim.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete persistentVolumeClaim %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -96,17 +99,18 @@ func deletePersistentVolumes(clientset *kubernetes.Clientset, logCh chan<- strin
 	persistentVolumes, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list persistentVolumes")
+		return
 	}
 	for _, persistentVolume := range persistentVolumes.Items {
 		waitGroup.Add(1)
 
 		name := persistentVolume.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete persistentVolume %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -122,17 +126,18 @@ func deleteSecrets(clientset *kubernetes.Clientset, namespace string, logCh chan
 	secrets, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list secrets")
+		return
 	}
 	for _, secret := range secrets.Items {
 		waitGroup.Add(1)
 
 		name := secret.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete secret %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()

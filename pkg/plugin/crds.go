@@ -19,6 +19,7 @@ func deleteClusterCrds(apixClient *apixv1client.ApiextensionsV1Client, dynamicCl
 	crds, err := apixClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list cluster-wide crds")
+		return
 	}
 	for _, crd := range crds.Items {
 		waitGroup.Add(1)
@@ -26,12 +27,12 @@ func deleteClusterCrds(apixClient *apixv1client.ApiextensionsV1Client, dynamicCl
 		name := crd.Name
 		crd := crd
 		go func() {
+			defer waitGroup.Done()
 			deleteCustomResources(&dynamicClient, crd, "", errorCh)
 			err := apixClient.CustomResourceDefinitions().Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete crd %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -47,6 +48,7 @@ func deleteNamespacedCrds(apixClient *apixv1client.ApiextensionsV1Client, dynami
 	})
 	if err != nil {
 		errorCh <- errors.Wrap(err, fmt.Sprintf("failed to list namespaced crds in: %s", namespace))
+		return
 	}
 	for _, crd := range crds.Items {
 		waitGroup.Add(1)
@@ -54,13 +56,12 @@ func deleteNamespacedCrds(apixClient *apixv1client.ApiextensionsV1Client, dynami
 		crd := crd
 
 		go func() {
+			defer waitGroup.Done()
 			deleteCustomResources(&dynamicClient, crd, namespace, errorCh)
-
 			err = apixClient.CustomResourceDefinitions().Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete crd %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -73,7 +74,6 @@ func deleteCustomResources(dynamicClient *dynamic.Interface, crd apixv1.CustomRe
 
 	crdGvr := crd.GroupVersionKind().GroupVersion().WithResource(name)
 	crApi := (*dynamicClient).Resource(crdGvr)
-	crWaitGroup := sync.WaitGroup{}
 
 	customResources, err := crApi.List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -84,17 +84,19 @@ func deleteCustomResources(dynamicClient *dynamic.Interface, crd apixv1.CustomRe
 			errorMsg = fmt.Sprintf("failed to list CustomResources for crd: %s", name)
 		}
 		errorCh <- errors.Wrap(err, errorMsg)
+		return
 	}
 
+	crWaitGroup := sync.WaitGroup{}
 	for _, customResource := range customResources.Items {
 		crWaitGroup.Add(1)
 		customResource := customResource
 		go func() {
+			defer crWaitGroup.Done()
 			err := crApi.Delete(ctx, customResource.GetName(), deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete CustomResource %s for crd: %s in namespace: %s", customResource.GetName(), name, namespace))
 			}
-			crWaitGroup.Done()
 		}()
 	}
 	crWaitGroup.Wait()

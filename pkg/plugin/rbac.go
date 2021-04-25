@@ -19,17 +19,18 @@ func deleteRoles(clientset *kubernetes.Clientset, namespace string, logCh chan<-
 	roles, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list roles")
+		return
 	}
 	for _, role := range roles.Items {
 		waitGroup.Add(1)
 
 		name := role.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete role %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -45,17 +46,18 @@ func deleteRoleBindings(clientset *kubernetes.Clientset, namespace string, logCh
 	roleBindings, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list roleBindings")
+		return
 	}
 	for _, roleBinding := range roleBindings.Items {
 		waitGroup.Add(1)
 
 		name := roleBinding.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete roleBinding %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -85,6 +87,7 @@ func deleteClusterRoles(clientset *kubernetes.Clientset, logCh chan<- string, er
 	clusterRoles, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list clusterRoles")
+		return
 	}
 	for _, clusterRole := range clusterRoles.Items {
 		name := clusterRole.Name
@@ -96,10 +99,10 @@ func deleteClusterRoles(clientset *kubernetes.Clientset, logCh chan<- string, er
 
 		waitGroup.Add(1)
 		go func() {
+			defer waitGroup.Done()
 			if err := api.Delete(ctx, name, deletePolicy); err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete clusterRole %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -127,6 +130,7 @@ func deleteClusterRoleBindings(clientset *kubernetes.Clientset, logCh chan<- str
 	clusterRoleBindings, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list clusterRoleBindings")
+		return
 	}
 	for _, clusterRoleBinding := range clusterRoleBindings.Items {
 		name := clusterRoleBinding.Name
@@ -138,11 +142,11 @@ func deleteClusterRoleBindings(clientset *kubernetes.Clientset, logCh chan<- str
 
 		waitGroup.Add(1)
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete clusterRoleBinding %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()

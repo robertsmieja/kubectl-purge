@@ -61,13 +61,6 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 	// wait for all the goroutines per namespace
 	namespaceWaitGroup := sync.WaitGroup{}
 
-	logCh <- "Deleting cluster CRDs"
-	clusterWaitGroup.Add(1)
-	go func() {
-		deleteClusterCrds(apixClient, dynamicClient, errorCh)
-		clusterWaitGroup.Done()
-	}()
-
 	clusterWaitGroup.Add(1)
 	go func() {
 		deleteClusterRoleBindings(clientset, logCh, errorCh)
@@ -200,14 +193,22 @@ func RunPlugin(configFlags *genericclioptions.ConfigFlags, logCh chan<- string, 
 		if namespaceName != "default" {
 			clusterWaitGroup.Add(1)
 			go func() {
+				defer clusterWaitGroup.Done()
 				namespaceWaitGroup.Wait()
 				if err := clientset.CoreV1().Namespaces().Delete(ctx, namespaceName, deletePolicy); err != nil {
 					errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete namespace: %s", namespaceName))
 				}
-				clusterWaitGroup.Done()
 			}()
 		}
 	}
+
+	// Delete cluster CRDs after namespaces are cleaned up
+	logCh <- "Deleting cluster CRDs"
+	clusterWaitGroup.Add(1)
+	go func() {
+		deleteClusterCrds(apixClient, dynamicClient, errorCh)
+		clusterWaitGroup.Done()
+	}()
 
 	// delete PersistentVolumes after the namespaced PersistentVolumeClaims are deleted
 	clusterWaitGroup.Add(1)

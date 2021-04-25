@@ -19,17 +19,18 @@ func deletePodSecurityPolicies(clientset *kubernetes.Clientset, logCh chan<- str
 	podSecurityPolicies, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list podSecurityPolicies")
+		return
 	}
 	for _, podSecurityPolicy := range podSecurityPolicies.Items {
 		waitGroup.Add(1)
 
 		name := podSecurityPolicy.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete podSecurityPolicy %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
@@ -45,17 +46,18 @@ func deletePodDisruptionBudgets(clientset *kubernetes.Clientset, namespace strin
 	podDisruptionBudgets, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list podDisruptionBudgets")
+		return
 	}
 	for _, podDisruptionBudget := range podDisruptionBudgets.Items {
 		waitGroup.Add(1)
 
 		name := podDisruptionBudget.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete podDisruptionBudget %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()

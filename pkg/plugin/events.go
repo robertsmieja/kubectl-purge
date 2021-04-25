@@ -18,17 +18,18 @@ func deleteEvents(clientset *kubernetes.Clientset, namespace string, logCh chan<
 	events, err := api.List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorCh <- errors.Wrap(err, "failed to list events")
+		return
 	}
 	for _, event := range events.Items {
 		waitGroup.Add(1)
 
 		name := event.Name
 		go func() {
+			defer waitGroup.Done()
 			err := api.Delete(ctx, name, deletePolicy)
 			if err != nil {
 				errorCh <- errors.Wrap(err, fmt.Sprintf("failed to delete event %s", name))
 			}
-			waitGroup.Done()
 		}()
 	}
 	waitGroup.Wait()
