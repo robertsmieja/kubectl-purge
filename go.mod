@@ -34,7 +34,7 @@ require (
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20210602144842-1cdb82c9e17a // indirect
 	golang.org/x/net v0.0.0-20210610132358-84b48f89b13b
-	golang.org/x/sys v0.0.0-20210608053332-aa57babbf139 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
 	golang.org/x/time v0.0.0-20210608053304-ed9ce3a009e4 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
